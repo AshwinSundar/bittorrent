@@ -8,14 +8,38 @@ import sys
 #
 # - decode_bencode(b"5:hello") -> b"hello"
 # - decode_bencode(b"10:hello12345") -> b"hello12345"
+# def decode_bencode(bencoded_value):
+#     if chr(bencoded_value[0]).isdigit():
+#         first_colon_index = bencoded_value.find(b":")
+#         if first_colon_index == -1:
+#             raise ValueError("Invalid encoded value")
+#         return bencoded_value[first_colon_index+1:]
+#     else:
+#         raise NotImplementedError("Only strings are supported at the moment")
+
 def decode_bencode(bencoded_value):
-    if chr(bencoded_value[0]).isdigit():
-        first_colon_index = bencoded_value.find(b":")
-        if first_colon_index == -1:
-            raise ValueError("Invalid encoded value")
-        return bencoded_value[first_colon_index+1:]
-    else:
-        raise NotImplementedError("Only strings are supported at the moment")
+    first_char = chr(bencoded_value[0])
+    match first_char:
+        # strings
+        case first_char if first_char.isdigit():
+            first_colon_index = bencoded_value.find(b":")
+            if first_colon_index == -1:
+                raise ValueError("Invalid encoded value")
+            return bencoded_value[first_colon_index+1:]
+
+        # digits
+        case "i":
+            if chr(bencoded_value[-1]) != "e":
+                raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
+
+            if any([not (chr(v).isdigit() or chr(v) == "-") for v in bencoded_value[1:-1]]):
+                raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
+
+            return int("".join([chr(v) for v in bencoded_value[1:-1]]))
+        case _:
+            raise NotImplementedError("Only strings are supported at the moment")
+
+
 
 
 def main():
