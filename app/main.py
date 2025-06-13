@@ -17,6 +17,7 @@ import sys
 #     else:
 #         raise NotImplementedError("Only strings are supported at the moment")
 
+
 def decode_bencode(bencoded_value):
     first_char = chr(bencoded_value[0])
     match first_char:
@@ -25,21 +26,32 @@ def decode_bencode(bencoded_value):
             first_colon_index = bencoded_value.find(b":")
             if first_colon_index == -1:
                 raise ValueError("Invalid encoded value")
-            return bencoded_value[first_colon_index+1:]
+            return bencoded_value[first_colon_index + 1:]
 
         # digits
         case "i":
             if chr(bencoded_value[-1]) != "e":
                 raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
 
+            # may be improved...
             if any([not (chr(v).isdigit() or chr(v) == "-") for v in bencoded_value[1:-1]]):
                 raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
 
             return int("".join([chr(v) for v in bencoded_value[1:-1]]))
+
+        # lists
+        case "l":
+            if chr(bencoded_value[-1]) != "e":
+                raise ValueError(f"Invalid encoded value. Expected l<el1><el2>...<elN>e, got: {bencoded_value}")
+
+            # YOU ARE HERE
+            # identify each element
+            # decode each element
+            # put it back together in a list
+
+
         case _:
-            raise NotImplementedError("Only strings are supported at the moment")
-
-
+            raise NotImplementedError("Type not implemented.")
 
 
 def main():
