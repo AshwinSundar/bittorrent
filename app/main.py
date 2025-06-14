@@ -1,5 +1,6 @@
 import json
 import sys
+from typing import TypedDict
 
 # import bencodepy - available if you need it!
 # import requests - available if you need it!
@@ -18,7 +19,12 @@ import sys
 #         raise NotImplementedError("Only strings are supported at the moment")
 
 
-def decode_bencode(bencoded_value):
+class DecodeReturnType(TypedDict):
+    value: str | int
+    consumed: int
+
+
+def decode_bencode(bencoded_value) -> DecodeReturnType:
     first_char = chr(bencoded_value[0])
     match first_char:
         # strings
@@ -32,19 +38,18 @@ def decode_bencode(bencoded_value):
             if length != len(bencoded_value[first_colon_index + 1:]):
                 raise ValueError(f"Invalid encoded string value - length {length} does not match size of value. Given: {bencoded_value}")
 
-            value = [chr(b) for b in bencoded_value[first_colon_index + 1:first_colon_index + 1 + length]]
-            return bencoded_value[first_colon_index + 1:]
+            return {"value": bencoded_value[first_colon_index + 1:], "consumed": length + first_colon_index + 1}
 
         # digits
         case "i":
             if chr(bencoded_value[-1]) != "e":
                 raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
 
-            # may be improved...
-            if any([not (chr(v).isdigit() or chr(v) == "-") for v in bencoded_value[1:-1]]):
+            value = bencoded_value[1:-1]
+            if any([not (chr(c).isdigit() or chr(c) == "-") for c in value]):
                 raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
 
-            return int("".join([chr(v) for v in bencoded_value[1:-1]]))
+            return {"value": int("".join([chr(c) for c in bencoded_value[1:-1]])), "consumed": len(value) + 2}
 
         # lists
         case "l":
@@ -61,6 +66,7 @@ def decode_bencode(bencoded_value):
 
 
             # YOU ARE HERE
+            # strings and digits cases behave better now. can see how many digits to advance with the "consumed" key
             # probably want to use recursion?
             # identify each element
             # decode each element
@@ -69,6 +75,10 @@ def decode_bencode(bencoded_value):
 
         case _:
             raise NotImplementedError("Type not implemented.")
+
+
+    # this should not happen...remove when done
+    return {"value": "INVALID", "consumed": 1}
 
 
 def main():
@@ -87,6 +97,7 @@ def main():
 
             raise TypeError(f"Type not serializable: {type(data)}")
 
+        # print(json.dumps(decode_bencode(bencoded_value)["value"], default=bytes_to_str))
         print(json.dumps(decode_bencode(bencoded_value), default=bytes_to_str))
     else:
         raise NotImplementedError(f"Unknown command {command}")
