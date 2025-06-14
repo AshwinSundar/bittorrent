@@ -25,7 +25,14 @@ def decode_bencode(bencoded_value):
         case first_char if first_char.isdigit():
             first_colon_index = bencoded_value.find(b":")
             if first_colon_index == -1:
-                raise ValueError("Invalid encoded value")
+                raise ValueError(f"Invalid encoded string value - Did not find ':' after integer. Given: {bencoded_value}")
+
+            length = int("".join([chr(b) for b in bencoded_value[:first_colon_index]]))
+
+            if length != len(bencoded_value[first_colon_index + 1:]):
+                raise ValueError(f"Invalid encoded string value - length {length} does not match size of value. Given: {bencoded_value}")
+
+            value = [chr(b) for b in bencoded_value[first_colon_index + 1:first_colon_index + 1 + length]]
             return bencoded_value[first_colon_index + 1:]
 
         # digits
@@ -44,7 +51,17 @@ def decode_bencode(bencoded_value):
             if chr(bencoded_value[-1]) != "e":
                 raise ValueError(f"Invalid encoded value. Expected l<el1><el2>...<elN>e, got: {bencoded_value}")
 
+            # print([print(i, chr(val)) for i, val in enumerate(bencoded_value[1: -1], start = 1)])
+            # discards first 'l' and last 'e'
+            for i, val in enumerate(bencoded_value[1:-1]):
+                ch = chr(val)
+                print(ch)
+                pass
+
+
+
             # YOU ARE HERE
+            # probably want to use recursion?
             # identify each element
             # decode each element
             # put it back together in a list
