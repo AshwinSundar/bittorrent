@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import TypedDict
+from typing import Any
 
 # import bencodepy - available if you need it!
 # import requests - available if you need it!
@@ -19,66 +19,44 @@ from typing import TypedDict
 #         raise NotImplementedError("Only strings are supported at the moment")
 
 
-class DecodeReturnType(TypedDict):
-    value: str | int
-    consumed: int
+def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
+    '''
+        Returns (value, rest)
+    '''
+    s = bencoded_value.decode()
 
+    #  string. returns <int> values after ':', rest
+    if s[0].isdigit():
+        colon_index = s.index(":")
 
-def decode_bencode(bencoded_value) -> DecodeReturnType:
-    first_char = chr(bencoded_value[0])
-    match first_char:
-        # strings
-        case first_char if first_char.isdigit():
-            first_colon_index = bencoded_value.find(b":")
-            if first_colon_index == -1:
-                raise ValueError(f"Invalid encoded string value - Did not find ':' after integer. Given: {bencoded_value}")
+        size = int(bencoded_value[:colon_index])
+        end_index = colon_index + 1 + size
+        value = bencoded_value[colon_index + 1:end_index]
 
-            length = int("".join([chr(b) for b in bencoded_value[:first_colon_index]]))
+        return (value, bencoded_value[end_index:])
 
-            if length != len(bencoded_value[first_colon_index + 1:]):
-                raise ValueError(f"Invalid encoded string value - length {length} does not match size of value. Given: {bencoded_value}")
+    #  int. return int(values) after i and before e, rest
+    elif s[0] == "i":
+        end_index = s.index("e")
+        value = bencoded_value[1:end_index]
 
-            return {"value": bencoded_value[first_colon_index + 1:], "consumed": length + first_colon_index + 1}
+        return (value, bencoded_value[end_index+1:])
 
-        # digits
-        case "i":
-            if chr(bencoded_value[-1]) != "e":
-                raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
+    # list - pass everything into decode_bencode, append each result into list until rest is empty
+    elif s[0] == "l":
+        blist: list[bytes] = []
+        value, rest = decode_bencode(bencoded_value[1:])
+        blist.append(value)
+        while len(rest) > 0 and rest != b"e":
+            value, rest = decode_bencode(rest)
+            blist.append(value)
 
-            value = bencoded_value[1:-1]
-            if any([not (chr(c).isdigit() or chr(c) == "-") for c in value]):
-                raise ValueError(f"Invalid encoded value. Expected i<int>e, got: {bencoded_value}")
+        return (blist, rest)
 
-            return {"value": int("".join([chr(c) for c in bencoded_value[1:-1]])), "consumed": len(value) + 2}
+    elif s[0] == "d":
+        pass
 
-        # lists
-        case "l":
-            if chr(bencoded_value[-1]) != "e":
-                raise ValueError(f"Invalid encoded value. Expected l<el1><el2>...<elN>e, got: {bencoded_value}")
-
-            # print([print(i, chr(val)) for i, val in enumerate(bencoded_value[1: -1], start = 1)])
-            # discards first 'l' and last 'e'
-            for i, val in enumerate(bencoded_value[1:-1]):
-                ch = chr(val)
-                print(ch)
-                pass
-
-
-
-            # YOU ARE HERE
-            # strings and digits cases behave better now. can see how many digits to advance with the "consumed" key
-            # probably want to use recursion?
-            # identify each element
-            # decode each element
-            # put it back together in a list
-
-
-        case _:
-            raise NotImplementedError("Type not implemented.")
-
-
-    # this should not happen...remove when done
-    return {"value": "INVALID", "consumed": 1}
+    raise ValueError()
 
 
 def main():
@@ -97,8 +75,7 @@ def main():
 
             raise TypeError(f"Type not serializable: {type(data)}")
 
-        # print(json.dumps(decode_bencode(bencoded_value)["value"], default=bytes_to_str))
-        print(json.dumps(decode_bencode(bencoded_value), default=bytes_to_str))
+        print(json.dumps(decode_bencode(bencoded_value)[0], default=bytes_to_str))
     else:
         raise NotImplementedError(f"Unknown command {command}")
 
