@@ -40,7 +40,7 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
         end_index = s.index("e")
         value = bencoded_value[1:end_index]
 
-        return (value, bencoded_value[end_index + 1:])
+        return (int(value), bencoded_value[end_index + 1:])
 
     # list - pass everything into decode_bencode, append each result into blist until rest is empty
     elif s[0] == "l":
