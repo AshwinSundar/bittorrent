@@ -45,6 +45,9 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
     # list - pass everything into decode_bencode, append each result into blist until rest is empty
     elif s[0] == "l":
         blist: list[bytes] = []
+        if s[1] == "e":
+            return (blist, [])
+
         value, rest = decode_bencode(bencoded_value[1:-1])
         blist.append(value)
         while len(rest) > 0:  # this may be wrong...nested loops not working properly here. everything else seems to work though. you are close!
