@@ -45,16 +45,22 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
     # list - pass everything into decode_bencode, append each result into blist until rest is empty
     elif s[0] == "l":
         blist: list[bytes] = []
-        if s[1] == "e":
-            return (blist, [])
+        rest = bencoded_value[1:]  # Skip the 'l' character
 
-        value, rest = decode_bencode(bencoded_value[1:-1])
-        blist.append(value)
-        while len(rest) > 0:  # this may be wrong...nested loops not working properly here. everything else seems to work though. you are close!
+        # Check if it's an empty list
+        if rest[0:1] == b'e':
+            return (blist, rest[1:])
+
+        # Parse list elements until we hit 'e'
+        while len(rest) > 0 and rest[0:1] != b'e':
             value, rest = decode_bencode(rest)
             blist.append(value)
 
-        return (blist, rest)
+        # Skip the 'e' character and return
+        if rest[0:1] == b'e':
+            return (blist, rest[1:])
+        else:
+            raise ValueError("List not properly terminated with 'e'")
 
     elif s[0] == "d":
         pass
