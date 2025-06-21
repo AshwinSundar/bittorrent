@@ -25,7 +25,8 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
     '''
     s = bencoded_value.decode()
 
-    #  string. returns <int> values after ':', rest
+    # string. returns <int> values after ':', rest
+    # 5:hello = "hello"
     if s[0].isdigit():
         colon_index = s.index(":")
 
@@ -35,7 +36,8 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
 
         return (value, bencoded_value[end_index:])
 
-    #  int. return int(values) after i and before e, rest
+    # int. return int(values) after i and before e, rest
+    # i42e = 42
     elif s[0] == "i":
         end_index = s.index("e")
         value = bencoded_value[1:end_index]
@@ -43,6 +45,9 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
         return (int(value), bencoded_value[end_index + 1:])
 
     # list - pass everything into decode_bencode, append each result into blist until rest is empty
+    # li42ee = [42]
+    # l5:helloi12ee = ["hello", 12]
+    # lli4eei5ee = [[4], 5]
     elif s[0] == "l":
         blist: list[bytes] = []
         rest = bencoded_value[1:]  # Skip the 'l' character
@@ -62,6 +67,7 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
         else:
             raise ValueError("List not properly terminated with 'e'")
 
+    # dictionary, pass k-v pairs into decode_bencode, push results into dictionary until rest is empty
     elif s[0] == "d":
         pass
 
