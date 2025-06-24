@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import Any
+from typing import Any, Tuple
 
 # import bencodepy - available if you need it!
 # import requests - available if you need it!
@@ -19,7 +19,7 @@ from typing import Any
 #         raise NotImplementedError("Only strings are supported at the moment")
 
 
-def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
+def decode_bencode(bencoded_value: bytes) -> Tuple[Any, bytes]:
     '''
         Returns (value, rest)
     '''
@@ -69,7 +69,25 @@ def decode_bencode(bencoded_value: bytes) -> (Any, bytes):
 
     # dictionary, pass k-v pairs into decode_bencode, push results into dictionary until rest is empty
     elif s[0] == "d":
-        pass
+        bdict: dict[str, bytes] = {}
+        rest = bencoded_value[1:]  # Skip the 'd' character
+
+        # Check if it's an empty dict
+        if rest[0:1] == b'e':
+            return (bdict, rest[1:])
+
+        # Parse dict elements until we hit 'e'
+        while len(rest) > 0 and rest[0:1] != b'e':
+            key, rest = decode_bencode(rest)
+            value, rest = decode_bencode(rest)
+
+            bdict[key.decode()] = value
+
+        # Skip the 'e' character and return
+        if rest[0:1] == b'e':
+            return (bdict, rest[1:])
+        else:
+            raise ValueError("Dict not properly terminated with 'e'")
 
     raise ValueError()
 
