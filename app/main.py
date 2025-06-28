@@ -23,7 +23,7 @@ def decode_bencode(bencoded_value: bytes) -> Tuple[Any, bytes]:
     '''
         Returns (value, rest)
     '''
-    s = bencoded_value.decode()
+    s = bencoded_value.decode(encoding="latin-1")
 
     # string. returns <int> values after ':', rest
     # 5:hello = "hello"
@@ -109,6 +109,15 @@ def main():
             raise TypeError(f"Type not serializable: {type(data)}")
 
         print(json.dumps(decode_bencode(bencoded_value)[0], default=bytes_to_str))
+
+    elif command == "info":
+        file_name = sys.argv[2]
+
+        with open(file_name, "rb") as file:
+            metainfo = file.read()
+            decoded_file = decode_bencode(metainfo)
+        print("Tracker URL:", decoded_file[0]["announce"].decode())
+        print("Length:", decoded_file[0]["info"]["length"])
     else:
         raise NotImplementedError(f"Unknown command {command}")
 
