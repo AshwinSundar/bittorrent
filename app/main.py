@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sys
 from typing import Any, Tuple
@@ -92,6 +93,41 @@ def decode_bencode(bencoded_value: bytes) -> Tuple[Any, bytes]:
     raise ValueError()
 
 
+def bencode(value: Any) -> bytes:
+    if type(value) == bytes:
+        value = str(value)
+
+    match value:
+        case str():
+            length = str(len(value))
+            bencoded_value = f"{length}:{value}"
+            return bencoded_value.encode()
+
+        case int():
+            bencoded_value = f"i{str(value)}e"
+            return bencoded_value.encode()
+
+        case list():
+            bencoded_value = "l"
+            for v in value:
+                bencoded_value += bencode(v).decode()
+
+            bencoded_value += "e"
+            return bencoded_value.encode()
+
+        case dict():
+            bencoded_value = "d"
+            for k, v in value.items():
+                bencoded_value += bencode(str(k)).decode()
+                bencoded_value += bencode(v).decode()
+
+            bencoded_value += "e"
+            return bencoded_value.encode()
+
+        case _:
+            raise ValueError("This object cannot be bencoded.")
+
+
 def main():
     command = sys.argv[1]
 
@@ -118,6 +154,17 @@ def main():
             decoded_file = decode_bencode(metainfo)
         print("Tracker URL:", decoded_file[0]["announce"].decode())
         print("Length:", decoded_file[0]["info"]["length"])
+
+        # bencoded_str = bencode("test")
+        # bencoded_int = bencode(24)
+        # bencoded_list = bencode([1, "two", [4]])
+        # bencoded_dict = bencode({"thing": "a-value"})
+
+        bencoded_info = bencode(decoded_file[0]["info"])
+        hashed_info = hashlib.sha1()
+        hashed_info.update(bencoded_info)
+        print("Info Hash:", hashed_info.hexdigest())
+
     else:
         raise NotImplementedError(f"Unknown command {command}")
 
