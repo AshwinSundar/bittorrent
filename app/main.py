@@ -152,21 +152,6 @@ def main():
         with open(file_name, "rb") as file:
             metainfo = file.read()
             decoded_file = decode_bencode(metainfo)
-        # print("Tracker URL:", decoded_file[0]["announce"].decode())
-        # print("Length:", decoded_file[0]["info"]["length"])
-
-        # bencoded_str = bencode("test")
-        # bencoded_int = bencode(24)
-        # bencoded_list = bencode([1, "two", [4]])
-        # bencoded_dict = bencode({"thing": "a-value"})
-
-        # you are here - calculated sha isn't correct. see hints
-        # transform the encoded values
-        # if isinstance(decoded_file[0]["info"]["pieces"], bytes):
-        #     decoded_file[0]["info"]["pieces"] = decoded_file[0]["info"]["pieces"].decode('latin-1')
-
-        # if isinstance(decoded_file[0]["info"]["pieces"], bytes):
-        #     decoded_file[0]["info"]["pieces"] = decoded_file[0]["info"]["pieces"].decode('latin-1')
 
         bencoded_info = bencode(decoded_file[0]["info"])
         hashed_info = hashlib.sha1()
